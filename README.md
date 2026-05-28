@@ -1,43 +1,64 @@
-# RoadWatch – AI-Powered Road Monitoring
+# RoadWatch
 
-RoadWatch empowers citizens to report road issues (potholes, waterlogging, etc.) and monitor public spending on repairs via an interactive dashboard. 
+RoadWatch is a powerful civic transparency and road infrastructure monitoring platform. It empowers citizens to report road issues (potholes, waterlogging, cracks) in seconds and allows them to monitor exactly how public money is being spent on repairs.
 
-## Features
-- **AI Chatbot**: Report issues naturally via text or photo (mock AI analysis).
-- **Interactive Live Map**: View reported issues with severity markers and heatmap overlays.
-- **Complaint Timeline**: Track the status of your reported issues (Pending -> Resolved -> Verified).
-- **Public Spending Dashboard**: View sanctioned vs used budget for road projects.
-- **Authority Dashboard**: Authorities can view complaints, mark them as resolved, and upload verification photos.
+## 🚀 Features
 
-## Tech Stack
-- React 19
-- Vite & TanStack Router
-- Tailwind CSS & Shadcn UI
-- Leaflet for Maps
-- Mock API for frontend demonstration without requiring backend setup
+- **Geo-tagged Reports**: Pinpoint exact locations with GPS and AI image analysis.
+- **AI Triage Feed**: Real-time AI classification feed that automatically categorizes issues by severity (Critical, Moderate, Minor) based on uploaded photos.
+- **Spending Insight**: A detailed budget dashboard showing funds sanctioned vs. funds used for specific road projects, holding contractors accountable.
+- **Verified Repairs**: Interactive before/after photo slider showcasing AI-verified repairs to demonstrate public spending at work.
+- **Authority Dashboard**: A comprehensive management panel for authorities to track KPIs, view open complaints, and update repair statuses.
+- **Interactive Live Map**: View real-time infrastructure issues overlaid on a map with a heat-map toggle and location-based search using OpenStreetMap Nominatim.
 
-## Run Instructions
-1. Ensure you have Node.js installed.
+## 🛠️ Tech Stack
+
+- **Framework**: React + Vite
+- **Routing**: TanStack Router
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn UI + Lucide Icons
+- **Maps**: Leaflet + React Leaflet
+- **Geocoding API**: OpenStreetMap Nominatim
+
+## 💻 Getting Started
+
+### Prerequisites
+Make sure you have Node.js and npm installed.
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/debjyotydasgupta-collab/Roadwatch.git
+   cd Roadwatch
+   ```
+
 2. Install dependencies:
    ```bash
-   npm install --legacy-peer-deps
+   npm install
    ```
-3. Start the development server:
+
+3. Set up environment variables:
+   Create a `.env` file in the root directory (this is ignored by Git for security) and add your necessary environment variables.
+
+4. Start the development server:
    ```bash
    npm run dev
    ```
-4. Open the application in your browser (typically `http://localhost:5173`).
 
-## Demo Roles
-To test the application flows quickly, you can use the Mock Login page:
-- **Citizen**: Can report issues, chat with AI, view the map and their timeline.
-- **Authority**: Can access the Admin Dashboard to mark complaints as resolved and upload verification images.
+5. Open your browser and navigate to `http://localhost:5173`.
 
-## Deployment
-Since this uses Vite, you can easily deploy it as a static site:
-1. Build the production bundle:
-   ```bash
-   npm run build
-   ```
-2. The output will be in the `dist` directory.
-3. You can deploy the `dist` folder to services like Vercel, Netlify, or GitHub Pages.
+## 📂 Project Structure
+
+- `src/routes/` - TanStack file-based routing components (`index.tsx`, `map.tsx`, `dashboard.tsx`, `budget.tsx`, etc.)
+- `src/components/` - Reusable UI components including the responsive Navbar, MapView, and Shadcn UI primitives.
+- `src/lib/` - Utility functions, mock API logic, and configuration.
+- `src/hooks/` - Custom React hooks for global state management (e.g., authentication, region selection).
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page if you want to contribute.
+
+## 📝 License
+
+This project is licensed under the MIT License.
