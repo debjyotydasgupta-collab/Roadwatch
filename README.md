@@ -11,6 +11,39 @@ RoadWatch is a powerful civic transparency and road infrastructure monitoring pl
 - **Authority Dashboard**: A comprehensive management panel for authorities to track KPIs, view open complaints, and update repair statuses.
 - **Interactive Live Map**: View real-time infrastructure issues overlaid on a map with a heat-map toggle and location-based search using OpenStreetMap Nominatim.
 
+## 📊 Architecture & Workflows
+
+### System Architecture
+```mermaid
+graph TD
+    A[Citizen / User] -->|Reports via Telegram/WhatsApp| B(AI Chatbot Integration)
+    A -->|Views Map & Budget| C[Web Application]
+    B -->|Image Analysis & NLP| D{AI Triage Engine}
+    D -->|Categorizes & Geotags| E[(Central Database)]
+    E -->|Updates Data| C
+    E -->|Alerts| F[Authority Dashboard]
+    F -->|Updates Status| E
+    C -->|Pulls Budget Data| E
+```
+
+### Incident Resolution Workflow
+```mermaid
+sequenceDiagram
+    participant C as Citizen
+    participant AI as AI Engine
+    participant DB as Database
+    participant A as Authority
+    
+    C->>AI: Sends photo & location of pothole
+    AI->>AI: Analyzes image, calculates severity
+    AI->>DB: Creates "Critical" geolocated ticket
+    DB-->>C: Sends confirmation & tracking link
+    DB->>A: Alerts dashboard of new critical issue
+    A->>A: Dispatches contractor
+    A->>DB: Marks status as "Resolved" & uploads proof
+    DB-->>C: Sends resolution notification
+```
+
 ## 🛠️ Tech Stack
 
 - **Framework**: React + Vite
