@@ -1,8 +1,12 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { mockApi } from "@/lib/mock-api";
+import { submitReport } from "@/lib/report-service";
+import { chatWithAI, analyzeImage } from "@/lib/ai.functions";
+import { useAuth } from "@/hooks/use-auth";
 import { Send, Image as ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,13 +17,26 @@ interface Message {
   image?: string;
 }
 
+const QUICK_PROMPTS = [
+  "There's a pothole on my street",
+  "How do I check road spending?",
+  "What traffic fines apply to two-wheelers?",
+];
+
 export function ChatWindow() {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
-    { id: "1", role: "ai", content: "Hello! I'm the RoadWatch assistant. You can tell me about a road issue, or ask me to check spending on a road." }
+    {
+      id: "1",
+      role: "ai",
+      content:
+        "Hello! I'm RoadWatch AI. Describe a road issue, upload a photo, or ask about spending and traffic fines.",
+    },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -27,77 +44,130 @@ export function ChatWindow() {
     }
   }, [messages, isTyping]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMsg = input.trim();
-    setInput("");
+  const sendMessage = async (userMsg: string) => {
     const newMsg: Message = { id: Date.now().toString(), role: "user", content: userMsg };
-    setMessages(prev => [...prev, newMsg]);
+    setMessages((prev) => [...prev, newMsg]);
     setIsTyping(true);
 
     try {
-      const response = await mockApi.chatResponse(userMsg);
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: "ai", content: response }]);
-    } catch (e) {
-      toast.error("Failed to get response");
+      const messageHistory = [...messages, newMsg].map((m) => ({
+        role: (m.role === "ai" ? "assistant" : "user") as "user" | "assistant",
+        content: m.content,
+      }));
+
+      let reply: string;
+      try {
+        const response = await chatWithAI({ data: { messages: messageHistory } });
+        reply = response.reply;
+      } catch {
+        reply = await mockApi.chatResponse(userMsg);
+      }
+      setMessages((prev) => [...prev, { id: Date.now().toString(), role: "ai", content: reply }]);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to get response";
+      toast.error(message);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const handleImageUpload = async () => {
-    // Mock image upload
-    const mockImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-    const newMsg: Message = { id: Date.now().toString(), role: "user", content: "Uploaded a photo", image: mockImage };
-    setMessages(prev => [...prev, newMsg]);
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const userMsg = input.trim();
+    setInput("");
+    await sendMessage(userMsg);
+  };
+
+  const processImage = async (imageUrl: string) => {
+    const newMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: "Uploaded a photo",
+      image: imageUrl,
+    };
+    setMessages((prev) => [...prev, newMsg]);
     setIsTyping(true);
 
     try {
-      const analysis = await mockApi.analyzeImage("mock-url");
-      const content = `I analyzed the image. It looks like a **${analysis.issueType}** with **${analysis.severity}** severity. I have filed the report automatically. Thank you!`;
-      
-      // Auto create complaint
-      await mockApi.createComplaint({
+      let analysis: { issueType: string; severity: string; description: string };
+      try {
+        analysis = await analyzeImage({ data: { imageUrl } });
+      } catch {
+        analysis = await mockApi.analyzeImage(imageUrl);
+      }
+      const severity = (["low", "medium", "high"].includes(analysis.severity)
+        ? analysis.severity
+        : "medium") as "low" | "medium" | "high";
+
+      await submitReport({
         title: `Reported ${analysis.issueType}`,
         description: analysis.description,
         type: analysis.issueType,
-        severity: analysis.severity as any,
-        location_lat: 12.9716, // mock location
-        location_lon: 77.5946,
-        image_url: "mock-image-url",
-        user_id: "u1" // mock user
+        severity,
+        location_lat: 12.9716 + (Math.random() * 0.01 - 0.005),
+        location_lon: 77.5946 + (Math.random() * 0.01 - 0.005),
+        image_url: imageUrl,
+        user_id: user?.id ?? "guest",
       });
 
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: "ai", content }]);
-      toast.success("Complaint filed successfully via AI!");
-    } catch (e) {
-      toast.error("Failed to analyze image");
+      const content = `I analyzed your photo: **${analysis.issueType}** (${analysis.severity} severity). The report is filed — [view on map](/map).`;
+      setMessages((prev) => [...prev, { id: Date.now().toString(), role: "ai", content }]);
+      toast.success("Complaint filed via AI!");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to analyze image";
+      toast.error(message);
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const handleFileChange = (file: File | undefined) => {
+    if (!file?.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => processImage(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   return (
     <div className="flex flex-col h-[600px] max-h-[80vh] rounded-xl border bg-card shadow-sm overflow-hidden">
-      <div className="bg-primary p-4 text-primary-foreground">
-        <h3 className="font-semibold flex items-center gap-2">
-          RoadWatch AI
-        </h3>
-        <p className="text-xs text-primary-foreground/80">Powered by Civic AI</p>
+      <div className="bg-primary p-4 text-primary-foreground flex justify-between items-start">
+        <div>
+          <h3 className="font-semibold">RoadWatch AI</h3>
+          <p className="text-xs text-primary-foreground/80">Report · spending · traffic laws</p>
+        </div>
+        <Link to="/report">
+          <Button size="sm" variant="secondary" className="h-8 text-xs">
+            Full report form
+          </Button>
+        </Link>
       </div>
-      
+
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
-          {messages.map(m => (
-            <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
-                m.role === "user" 
-                  ? "bg-primary text-primary-foreground rounded-br-none" 
-                  : "bg-muted text-foreground rounded-bl-none"
-              }`}>
-                {m.image && <img src={m.image} alt="uploaded" className="mb-2 max-w-full rounded-lg h-32 object-cover bg-black/10" />}
-                <div dangerouslySetInnerHTML={{ __html: m.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+          {messages.map((m) => (
+            <div
+              key={m.id}
+              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
+                  m.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-br-none"
+                    : "bg-muted text-foreground rounded-bl-none"
+                }`}
+              >
+                {m.image && (
+                  <img
+                    src={m.image}
+                    alt="uploaded"
+                    className="mb-2 max-w-full rounded-lg h-32 object-cover"
+                  />
+                )}
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: m.content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
+                  }}
+                />
               </div>
             </div>
           ))}
@@ -113,15 +183,44 @@ export function ChatWindow() {
         </div>
       </ScrollArea>
 
+      <div className="px-3 pt-2 flex flex-wrap gap-2 border-t bg-muted/30">
+        {QUICK_PROMPTS.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => sendMessage(p)}
+            disabled={isTyping}
+            className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-muted transition-colors"
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
       <div className="p-3 bg-background border-t">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => handleFileChange(e.target.files?.[0])}
+        />
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={handleImageUpload} title="Upload photo" className="shrink-0">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => fileRef.current?.click()}
+            title="Upload photo"
+            className="shrink-0"
+            disabled={isTyping}
+          >
             <ImageIcon className="h-4 w-4" />
           </Button>
-          <Input 
-            value={input} 
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSend()}
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="Describe the issue..."
             className="flex-1"
           />

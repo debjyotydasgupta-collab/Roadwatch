@@ -1,8 +1,20 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { Map, LayoutDashboard, Search, Coins, Globe, Menu, X } from "lucide-react";
+import {
+  Map,
+  LayoutDashboard,
+  Search,
+  Coins,
+  Globe,
+  Menu,
+  X,
+  MessageCircle,
+  Flag,
+  Wallet,
+} from "lucide-react";
 import { useAuth, mockAuth } from "@/hooks/use-auth";
 import { useRegion } from "@/hooks/use-region";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -22,23 +34,47 @@ export function Navbar() {
     navigate({ to: "/" });
   };
 
-  // These are public features that anyone can view
-  const PublicLinks = () => (
+  const PublicLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
     <>
-      <Link to="/map" onClick={() => setOpen(false)}>
-        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto"><Map className="w-4 h-4 mr-2"/> Map</Button>
+      <Link to="/map" onClick={onNavigate}>
+        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
+          <Map className="w-4 h-4 mr-2" /> Map
+        </Button>
       </Link>
-      <Link to="/calculator" onClick={() => setOpen(false)}>
-        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto"><Search className="w-4 h-4 mr-2"/> Traffic Laws</Button>
+      <Link to="/report" onClick={onNavigate}>
+        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
+          <Flag className="w-4 h-4 mr-2" /> Report
+        </Button>
       </Link>
-      <Link to="/analytics" onClick={() => setOpen(false)}>
-        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">Analytics</Button>
+      <Link to="/chat" onClick={onNavigate}>
+        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
+          <MessageCircle className="w-4 h-4 mr-2" /> AI Chat
+        </Button>
       </Link>
-      <Link to="/budget" onClick={() => setOpen(false)}>
-        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">Budget</Button>
+      <Link to="/spending" onClick={onNavigate}>
+        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
+          <Wallet className="w-4 h-4 mr-2" /> Spending
+        </Button>
+      </Link>
+      <Link to="/calculator" onClick={onNavigate}>
+        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
+          <Search className="w-4 h-4 mr-2" /> Traffic Laws
+        </Button>
+      </Link>
+      <Link to="/analytics" onClick={onNavigate}>
+        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
+          Analytics
+        </Button>
+      </Link>
+      <Link to="/budget" onClick={onNavigate}>
+        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
+          Budget
+        </Button>
       </Link>
     </>
   );
+
+  const closeMobile = () => setOpen(false);
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -48,19 +84,28 @@ export function Navbar() {
           <span className="font-bold text-lg">RoadWatch</span>
         </Link>
 
-        {/* Desktop Nav */}
-        <div className="hidden sm:flex items-center space-x-1">
+        <div className="hidden lg:flex items-center space-x-1">
           <PublicLinks />
-          
           {user?.role === "citizen" && (
             <Link to="/timeline">
-              <Button variant="ghost" size="sm"><LayoutDashboard className="w-4 h-4 mr-2"/> Timeline</Button>
+              <Button variant="ghost" size="sm">
+                <LayoutDashboard className="w-4 h-4 mr-2" /> Timeline
+              </Button>
             </Link>
           )}
           {user?.role === "authority" && (
-            <Link to="/admin">
-              <Button variant="ghost" size="sm">Admin Dashboard</Button>
-            </Link>
+            <>
+              <Link to="/admin">
+                <Button variant="ghost" size="sm">
+                  Admin
+                </Button>
+              </Link>
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm">
+                  Dashboard
+                </Button>
+              </Link>
+            </>
           )}
         </div>
 
@@ -71,7 +116,9 @@ export function Navbar() {
               {user.points} pts
             </div>
           )}
-          
+
+          <LanguageSelector />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8">
@@ -87,44 +134,60 @@ export function Navbar() {
 
           {user ? (
             <>
-              <span className="text-sm text-muted-foreground hidden md:inline-block">{user.name}</span>
-              <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:flex">Logout</Button>
+              <span className="text-sm text-muted-foreground hidden md:inline-block">
+                {user.name}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:flex">
+                Logout
+              </Button>
             </>
           ) : (
             <Link to="/login" className="hidden sm:flex">
-              <Button variant="default" size="sm">Login</Button>
+              <Button variant="default" size="sm">
+                Login
+              </Button>
             </Link>
           )}
 
-          {/* Mobile Menu Toggle */}
-          <button
-            className="sm:hidden p-2"
-            onClick={() => setOpen(!open)}
-          >
+          <button className="lg:hidden p-2" onClick={() => setOpen(!open)} aria-label="Toggle menu">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {open && (
-        <div className="sm:hidden border-t p-4 flex flex-col gap-2 bg-background">
-          <PublicLinks />
+        <div className="lg:hidden border-t p-4 flex flex-col gap-2 bg-background max-h-[70vh] overflow-y-auto">
+          <PublicLinks onNavigate={closeMobile} />
           {user?.role === "citizen" && (
-            <Link to="/timeline" onClick={() => setOpen(false)}>
-              <Button variant="ghost" size="sm" className="w-full justify-start"><LayoutDashboard className="w-4 h-4 mr-2"/> Timeline</Button>
+            <Link to="/timeline" onClick={closeMobile}>
+              <Button variant="ghost" size="sm" className="w-full justify-start">
+                <LayoutDashboard className="w-4 h-4 mr-2" /> Timeline
+              </Button>
             </Link>
           )}
           {user?.role === "authority" && (
-            <Link to="/admin" onClick={() => setOpen(false)}>
-              <Button variant="ghost" size="sm" className="w-full justify-start">Admin Dashboard</Button>
-            </Link>
+            <>
+              <Link to="/admin" onClick={closeMobile}>
+                <Button variant="ghost" size="sm" className="w-full justify-start">
+                  Admin
+                </Button>
+              </Link>
+              <Link to="/dashboard" onClick={closeMobile}>
+                <Button variant="ghost" size="sm" className="w-full justify-start">
+                  Dashboard
+                </Button>
+              </Link>
+            </>
           )}
           {user ? (
-            <Button variant="outline" size="sm" onClick={handleLogout} className="w-full mt-2">Logout</Button>
+            <Button variant="outline" size="sm" onClick={handleLogout} className="w-full mt-2">
+              Logout
+            </Button>
           ) : (
-            <Link to="/login" onClick={() => setOpen(false)}>
-              <Button variant="default" size="sm" className="w-full mt-2">Login</Button>
+            <Link to="/login" onClick={closeMobile}>
+              <Button variant="default" size="sm" className="w-full mt-2">
+                Login
+              </Button>
             </Link>
           )}
         </div>

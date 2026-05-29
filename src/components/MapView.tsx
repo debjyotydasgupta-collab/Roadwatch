@@ -13,8 +13,10 @@ export interface MapMarker {
   lat: number;
   lon: number;
   title: string;
-  severity: "low" | "medium" | "high";
+  severity: "Critical" | "Moderate" | "Minor" | string;
   status: string;
+  address?: string;
+  photo_url?: string;
   onClick?: () => void;
 }
 
@@ -22,6 +24,9 @@ const SEVERITY_COLOR: Record<string, string> = {
   low: "#22c55e",
   medium: "#f59e0b",
   high: "#ef4444",
+  Minor: "#22c55e",
+  Moderate: "#f59e0b",
+  Critical: "#ef4444",
 };
 
 interface Props {
@@ -80,8 +85,24 @@ export function MapView({
         iconSize: [22, 22],
       });
       const marker = L.marker([m.lat, m.lon], { icon }).bindPopup(
-        `<strong>${m.title}</strong><br/>Severity: ${m.severity}<br/>Status: ${m.status}<br/><br/>
-         <a href="/spending" style="color:var(--color-primary);text-decoration:underline;font-size:12px;font-weight:600;">View Regional Budget</a>`,
+        `<div style="min-width: 220px; font-family: 'Inter', sans-serif;">
+          ${m.photo_url ? `<div style="width: calc(100% + 40px); margin: -20px -20px 12px -20px; height: 140px; overflow: hidden; border-radius: 12px 12px 0 0;">
+            <img src="${m.photo_url}" style="width: 100%; height: 100%; object-fit: cover;" />
+          </div>` : ''}
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <strong style="font-size: 16px; text-transform: capitalize; color: var(--color-foreground);">${m.title}</strong>
+            <span style="background: ${SEVERITY_COLOR[m.severity] || '#000'}20; color: ${SEVERITY_COLOR[m.severity] || '#000'}; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; text-transform: uppercase;">${m.severity}</span>
+          </div>
+          <div style="font-size: 12px; color: #64748b; line-height: 1.4;">${m.address || 'Location Details'}</div>
+          <div style="margin-top: 12px; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${m.status === 'Resolved' ? '#22c55e' : m.status === 'In Progress' ? '#f59e0b' : '#3b82f6'};"></span>
+            <span style="text-transform: capitalize; font-weight: 500; color: #334155;">${m.status}</span>
+          </div>
+          <div style="margin-top: 12px; border-top: 1px solid #e2e8f0; padding-top: 10px; text-align: center;">
+            <a href="/spending" style="color:var(--color-primary);text-decoration:none;font-size:13px;font-weight:600;display:block;padding:6px;border-radius:6px;transition:all 0.2s;background:#f8fafc;">View Regional Budget</a>
+          </div>
+         </div>`,
+         { className: 'premium-popup' }
       );
       if (m.onClick) marker.on("click", m.onClick);
       cluster.addLayer(marker);
@@ -90,7 +111,7 @@ export function MapView({
 
     let heat: L.Layer | null = null;
     if (showHeatmap && markers.length > 0) {
-      const points = markers.map((m) => [m.lat, m.lon, m.severity === "high" ? 1 : m.severity === "medium" ? 0.6 : 0.3]);
+      const points = markers.map((m) => [m.lat, m.lon, (m.severity === "high" || m.severity === "Critical") ? 1 : (m.severity === "medium" || m.severity === "Moderate") ? 0.6 : 0.3]);
       // @ts-expect-error leaflet.heat
       heat = L.heatLayer(points, { radius: 30, blur: 25 });
       heat!.addTo(map);

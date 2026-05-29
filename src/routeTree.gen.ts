@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TimelineRouteImport } from './routes/timeline'
 import { Route as SpendingRouteImport } from './routes/spending'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LoginRouteImport } from './routes/login'
@@ -30,6 +31,11 @@ const TimelineRoute = TimelineRouteImport.update({
 const SpendingRoute = SpendingRouteImport.update({
   id: '/spending',
   path: '/spending',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportRoute = ReportRouteImport.update({
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
   '/report': typeof ReportRoute
+  '/signup': typeof SignupRoute
   '/spending': typeof SpendingRoute
   '/timeline': typeof TimelineRoute
 }
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
   '/report': typeof ReportRoute
+  '/signup': typeof SignupRoute
   '/spending': typeof SpendingRoute
   '/timeline': typeof TimelineRoute
 }
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
   '/report': typeof ReportRoute
+  '/signup': typeof SignupRoute
   '/spending': typeof SpendingRoute
   '/timeline': typeof TimelineRoute
 }
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/map'
     | '/report'
+    | '/signup'
     | '/spending'
     | '/timeline'
   fileRoutesByTo: FileRoutesByTo
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/map'
     | '/report'
+    | '/signup'
     | '/spending'
     | '/timeline'
   id:
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/map'
     | '/report'
+    | '/signup'
     | '/spending'
     | '/timeline'
   fileRoutesById: FileRoutesById
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MapRoute: typeof MapRoute
   ReportRoute: typeof ReportRoute
+  SignupRoute: typeof SignupRoute
   SpendingRoute: typeof SpendingRoute
   TimelineRoute: typeof TimelineRoute
 }
@@ -200,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/spending'
       fullPath: '/spending'
       preLoaderRoute: typeof SpendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/report': {
@@ -286,6 +306,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MapRoute: MapRoute,
   ReportRoute: ReportRoute,
+  SignupRoute: SignupRoute,
   SpendingRoute: SpendingRoute,
   TimelineRoute: TimelineRoute,
 }

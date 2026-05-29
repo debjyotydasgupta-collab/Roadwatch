@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { mockAuth } from "@/hooks/use-auth";
@@ -13,12 +13,25 @@ function Login() {
   const navigate = useNavigate();
 
   const handleLogin = (role: "citizen" | "authority") => {
-    const user: User = role === "citizen" 
-      ? { id: "u1", name: "Citizen Doe", email: "citizen@example.com", role: "citizen" }
-      : { id: "u2", name: "Admin Officer", email: "admin@example.com", role: "authority" };
-    
+    const user: User =
+      role === "citizen"
+        ? {
+            id: "u1",
+            name: "Citizen Doe",
+            email: "citizen@example.com",
+            role: "citizen",
+            points: 150,
+          }
+        : {
+            id: "u2",
+            name: "Admin Officer",
+            email: "admin@example.com",
+            role: "authority",
+            points: 0,
+          };
+
     mockAuth.login(user);
-    navigate({ to: "/" });
+    navigate({ to: role === "authority" ? "/admin" : "/timeline" });
   };
 
   return (
@@ -34,11 +47,22 @@ function Login() {
             <Button className="w-full" size="lg" onClick={() => handleLogin("citizen")}>
               Login as Citizen
             </Button>
-            <Button className="w-full" variant="outline" size="lg" onClick={() => handleLogin("authority")}>
+            <Button
+              className="w-full"
+              variant="outline"
+              size="lg"
+              onClick={() => handleLogin("authority")}
+            >
               Login as Authority
             </Button>
-            <div className="text-center text-xs text-muted-foreground mt-4">
-              This is a demo application. No password required.
+            <p className="text-center text-sm text-muted-foreground">
+              New here?{" "}
+              <Link to="/signup" className="text-primary hover:underline">
+                Create an account
+              </Link>
+            </p>
+            <div className="text-center text-xs text-muted-foreground">
+              Demo mode — no password required.
             </div>
           </CardContent>
         </Card>
