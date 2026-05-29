@@ -12,6 +12,11 @@ import {
   BarChart3,
   MessageCircle,
   ExternalLink,
+  Scan,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import {
   Dialog,
@@ -21,6 +26,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { AIVerifiedRepairsViewer } from "@/components/AIVerifiedRepairsViewer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -148,14 +154,9 @@ function Home() {
                   isInteractive
                   dialogTitle="AI-Verified Road Repairs"
                   dialogDesc="Visual proof of public spending at work."
+                  dialogClassName="sm:max-w-5xl h-[80vh] flex flex-col p-0 overflow-hidden bg-slate-950 border-slate-800 text-slate-100"
                 >
-                  <BeforeAfterSlider />
-                  <div className="mt-6 flex justify-center pb-2">
-                    <div className="flex items-center gap-2 bg-green-100 text-green-800 px-6 py-3 rounded-full text-lg font-bold border border-green-200 shadow-sm">
-                      <ShieldCheck className="w-6 h-6" />
-                      AI Verified
-                    </div>
-                  </div>
+                  <AIVerifiedRepairsViewer showAction={false} />
                 </FeatureTile>
               </div>
             </div>
@@ -166,60 +167,7 @@ function Home() {
   );
 }
 
-function BeforeAfterSlider() {
-  const [sliderPos, setSliderPos] = useState(50);
 
-  return (
-    <div className="relative w-full h-[250px] sm:h-[300px] rounded-lg overflow-hidden group border shadow-inner bg-slate-100 mt-2">
-      {/* After Image (Right/Bottom Layer) */}
-      <div className="absolute inset-0">
-        <img
-          src="https://images.unsplash.com/photo-1517482312628-9842a229a43a?w=600&q=80"
-          alt="Fresh asphalt"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute bottom-3 right-3 bg-green-600/90 text-white px-3 py-1 text-xs font-bold rounded shadow-md z-10">
-          Repaired: May 2026
-        </div>
-      </div>
-
-      {/* Before Image (Left/Top Layer clipped) */}
-      <div
-        className="absolute inset-0 z-10"
-        style={{ clipPath: `polygon(0 0, ${sliderPos}% 0, ${sliderPos}% 100%, 0 100%)` }}
-      >
-        <img
-          src="https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&q=80"
-          alt="Deep pothole"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute bottom-3 left-3 bg-red-600/90 text-white px-3 py-1 text-xs font-bold rounded shadow-md">
-          Reported: March 2026
-        </div>
-      </div>
-
-      {/* Visual Slider Line */}
-      <div
-        className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] z-20"
-        style={{ left: `calc(${sliderPos}% - 2px)` }}
-      >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center pointer-events-none">
-          <div className="w-1 h-4 border-l border-r border-slate-400 opacity-50" />
-        </div>
-      </div>
-
-      {/* Invisible Range Input */}
-      <input
-        type="range"
-        min="0"
-        max="100"
-        value={sliderPos}
-        onChange={(e) => setSliderPos(Number(e.target.value))}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-30"
-      />
-    </div>
-  );
-}
 
 function FeatureTile({
   icon,
@@ -271,7 +219,7 @@ function FeatureTile({
           </button>
         </DialogTrigger>
         <DialogContent className={dialogClassName || "sm:max-w-md"}>
-          <DialogHeader>
+          <DialogHeader className={dialogClassName?.includes("p-0") ? "sr-only" : ""}>
             <DialogTitle>{dialogTitle || "AI Triage Feed"}</DialogTitle>
             <DialogDescription>
               {dialogDesc || "Real-time AI classification feed simulation."}

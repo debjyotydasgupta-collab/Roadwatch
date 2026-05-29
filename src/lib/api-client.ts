@@ -90,4 +90,21 @@ export const apiClient = {
       return null;
     }
   },
+
+  authorityLogin: async (passcode: string): Promise<{ user: any } | { error: string }> => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/authority`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode }),
+      });
+      if (!res.ok) {
+        return { error: "Invalid passcode" };
+      }
+      return await res.json();
+    } catch (e) {
+      console.error("Error during authority login:", e);
+      return { error: "Network error" };
+    }
+  },
 };

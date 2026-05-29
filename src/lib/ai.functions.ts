@@ -1,28 +1,62 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash";
-
-function key() {
-  const k = process.env.LOVABLE_API_KEY;
-  if (!k) throw new Error("LOVABLE_API_KEY is not configured");
+function getGeminiKey() {
+  const k = process.env.GEMINI_API_KEY;
+  if (!k) throw new Error("GEMINI_API_KEY is not configured in .env");
   return k;
 }
 
-async function callAI(body: Record<string, unknown>) {
-  const res = await fetch(GATEWAY, {
+// Convert OpenAI format messages to Gemini format
+function convertToGeminiFormat(messages: any[]) {
+  return messages.map(msg => ({
+    role: msg.role === 'assistant' ? 'model' : 'user',
+    parts: Array.isArray(msg.content) 
+      ? msg.content.map((c: any) => {
+          if (c.type === 'text') return { text: c.text };
+          if (c.type === 'image_url') {
+            // Very basic support for image urls if they are data URIs
+            const match = c.image_url.url.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+            if (match) {
+              return { inlineData: { mimeType: match[1], data: match[2] } };
+            }
+            return { text: "[Image URL: " + c.image_url.url + "]" };
+          }
+          return { text: "" };
+        })
+      : [{ text: msg.content }]
+  }));
+}
+
+async function callGemini(messages: any[], systemInstruction?: string) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`;
+  
+  const payload: any = {
+    contents: convertToGeminiFormat(messages),
+  };
+  
+  if (systemInstruction) {
+    payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+  }
+
+  const res = await fetch(url, {
     method: "POST",
-    headers: { Authorization: `Bearer ${key()}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, ...body }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
+
   if (!res.ok) {
     const text = await res.text();
     if (res.status === 429) throw new Error("Rate limited. Please try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Please top up your workspace.");
-    throw new Error(`AI gateway error ${res.status}: ${text}`);
+    if (res.status === 503) throw new Error("AI models are experiencing high demand. Please try again.");
+    throw new Error(`AI error ${res.status}: ${text}`);
   }
-  return res.json();
+
+  const json = await res.json();
+  const content = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  
+  // Return in a structure matching what the existing functions expect
+  return { choices: [{ message: { content } }] };
 }
 
 const SYSTEM_PROMPT = `You are RoadWatch AI, a friendly civic assistant. You help citizens:
@@ -48,34 +82,27 @@ export const chatWithAI = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const result = await callAI({
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...data.messages],
-    });
+    // Note: Gemini handles system prompts separately, so we don't put it in the messages array
+    const result = await callGemini(data.messages, SYSTEM_PROMPT);
     const reply: string = result.choices?.[0]?.message?.content ?? "";
     return { reply };
   });
 
 export const analyzeImage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
-    z.object({ imageUrl: z.string().url().max(2000) }).parse(input),
+    z.object({ imageUrl: z.string().url().max(100000) }).parse(input), // Increased length for dataURIs
   )
   .handler(async ({ data }) => {
-    const result = await callAI({
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a road-defect classifier. Look at the image and respond ONLY with valid JSON, no prose, no code fences. Schema: {\"issueType\": one of [\"pothole\",\"waterlogging\",\"crack\",\"streetlight\",\"debris\",\"other\"], \"severity\": one of [\"low\",\"medium\",\"high\"], \"description\": short one-sentence description}.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Classify the road defect in this image." },
-            { type: "image_url", image_url: { url: data.imageUrl } },
-          ],
-        },
-      ],
-    });
+    const systemPrompt = "You are a road-defect classifier. Look at the image and respond ONLY with valid JSON, no prose, no code fences. Schema: {\"issueType\": one of [\"pothole\",\"waterlogging\",\"crack\",\"streetlight\",\"debris\",\"other\"], \"severity\": one of [\"low\",\"medium\",\"high\"], \"description\": short one-sentence description}.";
+    const result = await callGemini([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Classify the road defect in this image." },
+          { type: "image_url", image_url: { url: data.imageUrl } },
+        ],
+      },
+    ], systemPrompt);
     const raw: string = result.choices?.[0]?.message?.content ?? "{}";
     const cleaned = raw.replace(/```json|```/g, "").trim();
     try {
@@ -94,30 +121,24 @@ export const verifyRepair = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
       .object({
-        beforeUrl: z.string().url().max(2000),
-        afterUrl: z.string().url().max(2000),
+        beforeUrl: z.string().url().max(100000),
+        afterUrl: z.string().url().max(100000),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const result = await callAI({
-      messages: [
-        {
-          role: "system",
-          content:
-            "Compare a BEFORE and AFTER road photo. Respond ONLY with valid JSON: {\"verified\": boolean, \"confidence\": 0-1 number, \"note\": short reason}. Mark verified=true if the defect appears repaired.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Before photo:" },
-            { type: "image_url", image_url: { url: data.beforeUrl } },
-            { type: "text", text: "After photo:" },
-            { type: "image_url", image_url: { url: data.afterUrl } },
-          ],
-        },
-      ],
-    });
+    const systemPrompt = "Compare a BEFORE and AFTER road photo. Respond ONLY with valid JSON: {\"verified\": boolean, \"confidence\": 0-1 number, \"note\": short reason}. Mark verified=true if the defect appears repaired.";
+    const result = await callGemini([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Before photo:" },
+          { type: "image_url", image_url: { url: data.beforeUrl } },
+          { type: "text", text: "After photo:" },
+          { type: "image_url", image_url: { url: data.afterUrl } },
+        ],
+      },
+    ], systemPrompt);
     const raw: string = result.choices?.[0]?.message?.content ?? "{}";
     const cleaned = raw.replace(/```json|```/g, "").trim();
     try {

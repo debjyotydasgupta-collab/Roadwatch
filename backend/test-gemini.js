@@ -8,7 +8,8 @@ async function test() {
     console.log("Calling Gemini...");
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: "Generate 2 highly realistic mock road infrastructure projects for the Indian pincode 723102. Reply with ONLY a raw JSON array of objects containing these exact keys: 'road_name', 'contractor_name', 'allocated_amount' (a realistic integer in INR), 'deadline' (a future date string), and 'status' (choose 'In Progress' or 'Tender Stage'). Do not include markdown formatting like ```json.",
+      contents: "Search the web for real infrastructure or road projects in or near the Indian pincode 723102. Reply with ONLY a raw JSON array of objects containing: 'road_name', 'contractor_name' (or 'Government'), 'allocated_amount' (integer INR), 'deadline', and 'status'. Do not include markdown.",
+      tools: [{ googleSearch: {} }]
     });
     console.log("Response:", response.text);
   } catch (e) {

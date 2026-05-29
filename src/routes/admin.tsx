@@ -7,8 +7,9 @@ import { mockApi } from "@/lib/mock-api";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, TrendingUp, BarChart3, AlertTriangle, MapPin, Search } from "lucide-react";
+import { Loader2, CheckCircle, TrendingUp, BarChart3, AlertTriangle, MapPin, Search, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { AIVerifiedRepairsViewer } from "@/components/AIVerifiedRepairsViewer";
 import {
   Select,
   SelectContent,
@@ -336,6 +337,18 @@ function AdminPage() {
               </div>
             </Card>
           </div>
+        </div>
+
+        {/* Contractor Payouts (AI Verified) */}
+        <div className="mt-12 mb-8">
+          <h2 className="text-2xl font-bold mb-6 flex items-center">
+            <ShieldCheck className="w-6 h-6 mr-2 text-primary" /> Contractor Payouts (AI Verified)
+          </h2>
+          <Card className="premium-shadow overflow-hidden bg-slate-950 border-slate-800">
+            <div className="h-[600px] w-full">
+              <AIVerifiedRepairsViewer showAction={true} />
+            </div>
+          </Card>
         </div>
       </div>
     </div>

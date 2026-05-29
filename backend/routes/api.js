@@ -12,6 +12,28 @@ try {
   console.warn("Could not initialize Gemini Client automatically. Ensure GEMINI_API_KEY is in your .env", e.message);
 }
 
+// POST /auth/authority — Handle authority login
+router.post("/auth/authority", (req, res) => {
+  const { passcode } = req.body;
+  const validPasscode = process.env.AUTHORITY_PASSCODE || "ADMIN123";
+
+  if (passcode === validPasscode) {
+    console.log("✅ Authority successfully authenticated.");
+    return res.status(200).json({
+      user: {
+        id: "auth-1",
+        name: "Admin Officer",
+        email: "admin@roadwatch.gov",
+        role: "authority",
+        points: 0,
+      }
+    });
+  }
+
+  console.log("❌ Failed authority authentication attempt.");
+  return res.status(401).json({ error: "Invalid passcode" });
+});
+
 // POST /complaints — web app report submission
 router.post("/complaints", async (req, res) => {
   try {
@@ -133,11 +155,12 @@ router.get('/spending/:pincode', async (req, res) => {
 
     // Generate mock data using Gemini API
     console.log(`🤖 AI Budget Fallback: Generating highly realistic infrastructure mock data for ${pincode}...`);
-    const prompt = `Generate 2 highly realistic mock road infrastructure projects for the Indian pincode ${pincode}. Reply with ONLY a raw JSON array of objects containing these exact keys: 'road_name', 'contractor_name', 'allocated_amount' (a realistic integer in INR), 'deadline' (a future date string), and 'status' (choose 'In Progress' or 'Tender Stage'). Do not include markdown formatting like \`\`\`json.`;
+    const prompt = `Search the web for real infrastructure, road, or municipal projects in or near the Indian pincode ${pincode}. If you find real projects, return them. If you cannot find exact projects for this pincode, generate 2 highly realistic mock road infrastructure projects that could plausibly exist in that specific region based on your geographical knowledge. Reply with ONLY a raw JSON array of objects containing these exact keys: 'road_name', 'contractor_name' (or 'Government'), 'allocated_amount' (a realistic integer in INR), 'deadline' (a future date string), and 'status' (choose 'In Progress' or 'Tender Stage'). Do not include markdown formatting like \`\`\`json.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
+      tools: [{ googleSearch: {} }]
     });
     
     let responseText = response.text || '';
