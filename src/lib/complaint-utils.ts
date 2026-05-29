@@ -9,7 +9,7 @@ export type ComplaintDisplay = {
   address?: string;
   latitude: number;
   longitude: number;
-  photo_url?: string;
+  image_url?: string;
   created_at: string;
 };
 
@@ -28,7 +28,7 @@ const MOCK_STATUS: Record<Complaint["status"], ApiComplaint["status"]> = {
 export function mockComplaintToApi(c: Complaint): ApiComplaint {
   return {
     id: c.id,
-    photo_url: c.image_url,
+    image_url: c.image_url,
     latitude: c.location_lat,
     longitude: c.location_lon,
     address: c.title,
@@ -49,7 +49,7 @@ export function normalizeComplaint(c: Complaint | ApiComplaint): ComplaintDispla
       address: c.address,
       latitude: c.latitude,
       longitude: c.longitude,
-      photo_url: c.photo_url,
+      image_url: c.image_url,
       created_at: c.created_at,
     };
   }
@@ -62,7 +62,7 @@ export function normalizeComplaint(c: Complaint | ApiComplaint): ComplaintDispla
     address: c.title,
     latitude: c.location_lat,
     longitude: c.location_lon,
-    photo_url: c.image_url,
+    image_url: c.image_url,
     created_at: c.created_at,
   };
 }

@@ -30,6 +30,7 @@ function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [focusedMarkerId, setFocusedMarkerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && role !== "authority") {
@@ -66,6 +67,12 @@ function AdminPage() {
     }
   };
 
+  const handleRowClick = (id: string) => {
+    setFocusedMarkerId(id);
+    // Smooth scroll map into view on mobile
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const getSeverityData = () => {
     const counts = { Critical: 0, Moderate: 0, Minor: 0 };
     complaints.forEach((c) => {
@@ -74,8 +81,8 @@ function AdminPage() {
       }
     });
     return [
-      { name: "Critical", value: counts.Critical, color: "#ef4444" },
-      { name: "Moderate", value: counts.Moderate, color: "#f59e0b" },
+      { name: "Critical", value: counts.Critical, color: "#dc2626" },
+      { name: "Moderate", value: counts.Moderate, color: "#eab308" },
       { name: "Minor", value: counts.Minor, color: "#22c55e" },
     ].filter((item) => item.value > 0);
   };
@@ -212,6 +219,7 @@ function AdminPage() {
             </h2>
             <Card className="premium-shadow glass-card flex-1 overflow-hidden min-h-[400px]">
               <MapView
+                focusedMarkerId={focusedMarkerId}
                 markers={filteredComplaints.map((c) => ({
                   id: c.id,
                   lat: c.latitude,
@@ -220,7 +228,8 @@ function AdminPage() {
                   severity: c.severity,
                   status: c.status,
                   address: c.address,
-                  photo_url: c.photo_url,
+                  image_url: c.image_url,
+                  created_at: c.created_at,
                 }))}
               />
             </Card>
@@ -250,7 +259,7 @@ function AdminPage() {
                     <tbody className="divide-y divide-border">
                       {complaints.length > 0 ? (
                         filteredComplaints.map((c) => (
-                          <tr key={c.id} className="hover:bg-muted/50 transition-colors">
+                          <tr key={c.id} onClick={() => handleRowClick(c.id)} className="hover:bg-muted/50 transition-colors cursor-pointer">
                             <td className="px-4 py-3">
                               <div className="font-medium text-foreground capitalize">
                                 {c.issue_type}
@@ -291,7 +300,10 @@ function AdminPage() {
                                   size="sm"
                                   variant="outline"
                                   className="h-7 px-2"
-                                  onClick={() => handleStatusChange(c.id, "In Progress")}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusChange(c.id, "In Progress");
+                                  }}
                                 >
                                   <CheckCircle className="w-3 h-3 mr-1" /> Start
                                 </Button>
@@ -300,7 +312,10 @@ function AdminPage() {
                                 <Button
                                   size="sm"
                                   className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white"
-                                  onClick={() => handleStatusChange(c.id, "Resolved")}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusChange(c.id, "Resolved");
+                                  }}
                                 >
                                   <CheckCircle className="w-3 h-3 mr-1" /> Resolve
                                 </Button>

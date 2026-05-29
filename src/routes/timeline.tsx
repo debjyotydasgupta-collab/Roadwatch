@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Coins } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/timeline")({
   component: TimelinePage,
@@ -56,13 +57,22 @@ function TimelinePage() {
             <h1 className="text-3xl font-bold tracking-tight">My reports</h1>
             <p className="text-muted-foreground mt-1">Track status and earn civic points</p>
           </div>
-          <Card className="md:w-auto">
-            <CardContent className="py-3 px-4 flex items-center gap-2">
-              <Coins className="h-5 w-5 text-amber-500" />
-              <span className="font-bold text-lg">{user.points}</span>
-              <span className="text-sm text-muted-foreground">points</span>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-2 md:items-end">
+            <Card className="md:w-auto">
+              <CardContent className="py-3 px-4 flex items-center gap-2">
+                <Coins className="h-5 w-5 text-amber-500" />
+                <span className="font-bold text-lg">{user.points}</span>
+                <span className="text-sm text-muted-foreground">points</span>
+              </CardContent>
+            </Card>
+            <Button 
+              size="sm" 
+              className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+              onClick={() => toast.success("🎁 Partner Integration Coming Soon!")}
+            >
+              Redeem Rewards
+            </Button>
+          </div>
         </div>
 
         <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)} className="mb-6">

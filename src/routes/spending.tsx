@@ -1,22 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { SpendingCard, SpendingCardSkeleton } from "@/components/SpendingCard";
 import { apiClient, ApiProject } from "@/lib/api-client";
-import { mockApi, RoadProject } from "@/lib/mock-api";
-import { useRegion } from "@/hooks/use-region";
-
-function toApiProject(p: RoadProject): ApiProject {
-  const usedRatio = p.budget_amount > 0 ? p.used_amount / p.budget_amount : 0;
-  return {
-    road_name: p.name,
-    contractor_name: p.contractor_name,
-    allocated_amount: p.budget_amount,
-    used_amount: p.used_amount,
-    deadline: p.last_relaying_date,
-    status: usedRatio >= 0.95 ? "Completed" : usedRatio > 0 ? "In Progress" : "Tender Stage",
-  };
-}
 import { Search, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,12 +12,26 @@ export const Route = createFileRoute("/spending")({
   component: SpendingPage,
 });
 
+const LOADING_PHRASES = [
+  "Connecting to municipal database...",
+  "Analyzing local contracts...",
+  "Finalizing data..."
+];
+
 function SpendingPage() {
-  const { region } = useRegion();
   const [projects, setProjects] = useState<ApiProject[]>([]);
   const [loading, setLoading] = useState(false);
   const [pincode, setPincode] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setLoadingPhraseIndex((prev) => (prev + 1) % LOADING_PHRASES.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,18 +42,15 @@ function SpendingPage() {
 
     setLoading(true);
     setHasSearched(true);
+    setLoadingPhraseIndex(0);
+    setProjects([]);
 
     try {
       const data = await apiClient.getSpending(pincode);
-      if (data.length > 0) {
-        setProjects(data);
-      } else {
-        const mock = await mockApi.getSpending(region);
-        setProjects(mock.map(toApiProject));
-      }
+      setProjects(data);
     } catch {
-      const mock = await mockApi.getSpending(region);
-      setProjects(mock.map(toApiProject));
+      toast.error("Failed to fetch budget data.");
+      setProjects([]);
     } finally {
       setLoading(false);
     }
@@ -82,18 +79,25 @@ function SpendingPage() {
                 onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))}
               />
             </div>
-            <Button type="submit" disabled={loading} className="premium-hover shadow-sm">
+            <Button type="submit" disabled={loading} className="premium-hover shadow-sm bg-[#229ED9] hover:bg-[#1c88ba] text-white">
               <Sparkles className="w-4 h-4 mr-2" />
-              Analyze
+              Track Funds
             </Button>
           </form>
         </div>
 
         {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <SpendingCardSkeleton key={i} />
-            ))}
+          <div className="flex flex-col space-y-8">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <SpendingCardSkeleton key={i} />
+              ))}
+            </div>
+            <div className="flex justify-center items-center h-20">
+              <p className="text-muted-foreground text-sm font-medium animate-pulse">
+                {LOADING_PHRASES[loadingPhraseIndex]}
+              </p>
+            </div>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

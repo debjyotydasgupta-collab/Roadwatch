@@ -54,22 +54,35 @@ router.post("/complaints", async (req, res) => {
 router.get('/complaints', async (req, res) => {
   try {
     console.log(`🗺️ Frontend requested map data (GET /complaints)...`);
-    console.log("🟢 Frontend requested complaints data!");
     const { data, error } = await supabase
       .from('Complaints')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    res.json(data);
+
+    // Map photo_url to image_url to match expected flat format
+    const formattedData = data.map(c => ({
+      id: c.id,
+      latitude: c.latitude,
+      longitude: c.longitude,
+      severity: c.severity,
+      status: c.status,
+      address: c.address,
+      image_url: c.photo_url,
+      created_at: c.created_at,
+      issue_type: c.issue_type // Keep for other uses just in case
+    }));
+
+    res.json(formattedData);
   } catch (error) {
     console.error('Error fetching complaints:', error);
     res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });
 
-// 4. PATCH /complaints/:id/status
-router.patch('/complaints/:id/status', async (req, res) => {
+// 4. PATCH /complaints/:id
+router.patch('/complaints/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -83,9 +96,9 @@ router.patch('/complaints/:id/status', async (req, res) => {
       .single();
 
     if (error) throw error;
-    res.json(data);
+    res.status(200).json(data);
   } catch (error) {
-    console.error('Error updating complaint status:', error);
+    console.error('Error updating complaint:', error);
     res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });
@@ -96,17 +109,22 @@ router.get('/spending/:pincode', async (req, res) => {
     const { pincode } = req.params;
     console.log(`💰 Frontend searching spending for Pincode: ${pincode}...`);
 
-    // Query Supabase Budgets table
-    const { data, error } = await supabase
-      .from('Budgets')
-      .select('*')
-      .eq('pincode', pincode);
+    let dbProjects = null;
+    try {
+      const { data, error } = await supabase
+        .from('Budgets')
+        .select('*')
+        .eq('pincode', pincode);
+      if (!error && data && data.length > 0) {
+        dbProjects = data;
+      }
+    } catch (dbErr) {
+      console.log(`Supabase 'Budgets' table missing or error. Falling back to AI...`);
+    }
 
-    if (error) throw error;
-
-    if (data && data.length > 0) {
-      console.log(`✅ Found ${data.length} actual projects in database.`);
-      return res.json(data);
+    if (dbProjects) {
+      console.log(`✅ Found ${dbProjects.length} actual projects in database.`);
+      return res.json(dbProjects);
     }
 
     if (!ai) {
@@ -115,7 +133,7 @@ router.get('/spending/:pincode', async (req, res) => {
 
     // Generate mock data using Gemini API
     console.log(`🤖 AI Budget Fallback: Generating highly realistic infrastructure mock data for ${pincode}...`);
-    const prompt = `Generate 2 highly realistic mock road infrastructure projects for the Indian pincode ${pincode}. Return ONLY a raw JSON array of objects containing exact keys: "road_name", "contractor_name", "allocated_amount" (realistic integer in INR), "deadline" (future date string), and "status" (In Progress, or Tender Stage). Do not include markdown formatting or any other text.`;
+    const prompt = `Generate 2 highly realistic mock road infrastructure projects for the Indian pincode ${pincode}. Reply with ONLY a raw JSON array of objects containing these exact keys: 'road_name', 'contractor_name', 'allocated_amount' (a realistic integer in INR), 'deadline' (a future date string), and 'status' (choose 'In Progress' or 'Tender Stage'). Do not include markdown formatting like \`\`\`json.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',

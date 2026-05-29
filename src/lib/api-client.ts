@@ -7,7 +7,7 @@ export const BACKEND_URL =
 
 export interface ApiComplaint {
   id: string;
-  photo_url?: string;
+  image_url?: string;
   latitude: number;
   longitude: number;
   address: string;
@@ -52,7 +52,7 @@ export const apiClient = {
 
   updateComplaintStatus: async (id: string, status: string): Promise<ApiComplaint | null> => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/complaints/${id}/status`, {
+      const res = await fetch(`${BACKEND_URL}/api/complaints/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),

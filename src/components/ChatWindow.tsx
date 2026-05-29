@@ -104,8 +104,8 @@ export function ChatWindow() {
         description: analysis.description,
         type: analysis.issueType,
         severity,
-        location_lat: 12.9716 + (Math.random() * 0.01 - 0.005),
-        location_lon: 77.5946 + (Math.random() * 0.01 - 0.005),
+        location_lat: 23.3321 + (Math.random() * 0.01 - 0.005),
+        location_lon: 86.3652 + (Math.random() * 0.01 - 0.005),
         image_url: imageUrl,
         user_id: user?.id ?? "guest",
       });

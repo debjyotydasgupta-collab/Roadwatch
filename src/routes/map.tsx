@@ -31,7 +31,7 @@ function MapPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
-  const [mapCenter, setMapCenter] = useState<[number, number]>([12.9716, 77.5946]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([23.3321, 86.3652]);
   const [mapZoom, setMapZoom] = useState(13);
   const [isSearching, setIsSearching] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -99,7 +99,8 @@ function MapPage() {
     severity: c.severity,
     status: c.status,
     address: c.address,
-    photo_url: c.photo_url,
+    image_url: c.image_url,
+    created_at: c.created_at,
   }));
 
   return (
