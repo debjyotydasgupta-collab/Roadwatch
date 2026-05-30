@@ -68,7 +68,8 @@ Make sure you have Node.js and npm installed.
 
 2. Install dependencies:
    ```bash
-   npm install
+   npm i
+   npm i --legacy-peer-deps
    ```
 
 3. Set up environment variables:
@@ -79,7 +80,7 @@ Make sure you have Node.js and npm installed.
    npm run dev
    ```
 
-5. Open your browser and navigate to `http://localhost:5173`.
+5. Open your browser and navigate to `http://localhost:8080`.
 
 ## 📂 Project Structure
 
