@@ -85,10 +85,10 @@ export function ComplaintCard({
         </div>
       </CardHeader>
       <CardContent className="pb-3 text-sm text-muted-foreground space-y-3">
-        {complaint.photo_url && (
+        {complaint.image_url && (
           <div className="mt-2 relative h-32 w-full overflow-hidden rounded-md border">
             <img
-              src={complaint.photo_url}
+              src={complaint.image_url}
               alt="Issue"
               className="absolute inset-0 h-full w-full object-cover"
             />
